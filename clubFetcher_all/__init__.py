@@ -8,20 +8,33 @@ from bs4 import BeautifulSoup
 
 class ClubFetcher:
     def __init__(self) -> None:
-
+        self.page = httpx.get("https://fbref.com/en/comps/Big5/Big-5-European-Leagues-Stats").text.encode("utf-8")
+        self.pageHTML = BeautifulSoup(self.page, 'html.parser')
+        self.topLeagues = set()
         pass
+
+    def getTopLeagues(self):
+        topLeaguesDivHTML = self.pageHTML.find(id="all_league_summary").encode("utf-8")
+
+        #topLeaguesHTML  = topLeaguesDivHTML.find_all("div")
+
+        #for topLeague in topLeaguesDivHTML:
+         #   print(topLeague.encode("utf-8"))
+
+        return topLeaguesDivHTML
     
     def getAllClubs(self):
-        page = httpx.get("https://fbref.com/en/comps/Big5/Big-5-European-Leagues-Stats").text.encode("utf-8")
-        pageHTML = BeautifulSoup(page, 'html.parser')
-        clubTableHTML = pageHTML.find(id="big5_table").tbody
+        clubTableHTML = self.pageHTML.find(id="big5_table").tbody
 
         clubRowsHTML = clubTableHTML.find_all("tr")
 
         #clubRowHTML = clubRowsHTML[0].find_all(attrs={"data-stat":"team"})
         i = 0
         for clubRowHTML in clubRowsHTML:
-            print(i+1)
+
+            clubLeague = clubRowHTML.find_all("span", "f-i")[0].string
+
+
             clubName = clubRowHTML.find_all(attrs={"data-stat":"team"})[0].a.string.encode("utf-8")
             clubLeagueRank = clubRowHTML.find_all(attrs={"data-stat":"rank"})[0].string.encode("utf-8")
             clubNumGames = clubRowHTML.find_all(attrs={"data-stat":"games"})[0].string.encode("utf-8")
@@ -46,7 +59,7 @@ class ClubFetcher:
 
 
 
-            print(clubTopScorer)
+            print(clubLeague)
 
         
 
@@ -61,8 +74,10 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logging.info('The timer is past due!')
 
-    allClubs = ClubFetcher().getAllClubs()
+    #allClubs = ClubFetcher().getAllClubs()
 
-    print(allClubs)
+    topLeagues = ClubFetcher().getTopLeagues()
+
+    print(topLeagues)
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
