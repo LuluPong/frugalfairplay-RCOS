@@ -2,6 +2,7 @@ import datetime
 import logging
 
 import httpx
+import psycopg2
 
 import azure.functions as func
 from bs4 import BeautifulSoup
