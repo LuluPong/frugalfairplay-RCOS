@@ -10,18 +10,21 @@ class ClubFetcher:
     def __init__(self) -> None:
         self.page = httpx.get("https://fbref.com/en/comps/Big5/Big-5-European-Leagues-Stats").text.encode("utf-8")
         self.pageHTML = BeautifulSoup(self.page, 'html.parser')
-        self.topLeagues = set()
+
+        self.topLeagues = httpx.get("https://fbref.com/en/comps/Big5/history/Big-5-European-Leagues-Seasons").text.encode("utf-8")
+        self.topLeaguesHTML = BeautifulSoup(self.topLeagues, 'html.parser')
         pass
 
     def getTopLeagues(self):
-        topLeaguesDivHTML = self.pageHTML.find(id="all_league_summary").encode("utf-8")
+        topLeaguesTableHTML = self.topLeaguesHTML.find(id="seasons").thead.tr
 
-        #topLeaguesHTML  = topLeaguesDivHTML.find_all("div")
+        topLeaguesTableHTML = topLeaguesTableHTML.find_all("th")[1:-1]
 
-        #for topLeague in topLeaguesDivHTML:
-         #   print(topLeague.encode("utf-8"))
+        for topLeague in topLeaguesTableHTML:
+            print(topLeague["data-stat"].encode("utf-8"))
 
-        return topLeaguesDivHTML
+
+        return topLeaguesTableHTML
     
     def getAllClubs(self):
         clubTableHTML = self.pageHTML.find(id="big5_table").tbody
