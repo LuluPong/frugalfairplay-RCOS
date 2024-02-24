@@ -32,9 +32,6 @@ class ClubFetcher:
             if countryCode.lower() not in leagueKeys:
                 self.dbMainTable[countryCode] = countryLeague
 
-            
-
-
         return self.dbMainTable
     
     def getAllClubs(self):
