@@ -1,6 +1,8 @@
 import datetime
 import logging
 
+import os
+
 import httpx
 import psycopg2
 
@@ -16,8 +18,18 @@ class ClubFetcher:
         self.topLeaguesHTML = BeautifulSoup(self.topLeagues, 'html.parser')
 
         self.dbMainTable = dict()
+
+
+        self.dbName = os.environ["PostgresDBname"]
+        self.dbUser = os.environ["PostgresDBuser"]
+        self.dbPSWD = os.environ["PostgresDBPWD"]
+
         pass
 
+    def pushTopLeaguesToDB(self):
+        return
+
+    #FROM WEB SCRAPER
     def getTopLeagues(self):
         topLeaguesTableHTML = self.topLeaguesHTML.find(id="seasons").thead.tr
 
@@ -34,6 +46,7 @@ class ClubFetcher:
 
         return self.dbMainTable
     
+    #FROM WEB SCRAPER
     def getAllClubs(self):
         clubTableHTML = self.pageHTML.find(id="big5_table").tbody
 
@@ -64,17 +77,43 @@ class ClubFetcher:
             clubAttendance90 = clubRowHTML.find_all(attrs={"data-stat":"attendance_per_g"})[0].string.encode("utf-8")
             clubTopScorer = clubRowHTML.find_all(attrs={"data-stat":"top_team_scorers"})[0].a.string.encode("utf-8")
             clubTopScorerNumGoals = clubRowHTML.find_all(attrs={"data-stat":"top_team_scorers"})[0].span.string.encode("utf-8")
-            
-
-
-
-
 
             print(clubLeague)
 
         
 
         return "end"
+    
+    def putLeaguesInDB(self, leaguesDictionary):
+        try:
+            #CONNECTING TO DB
+            conn = psycopg2.connect(dbname=self.dbName, user=self.dbUser, password=self.dbPSWD)
+            cur = conn.cursor()
+
+
+        except psycopg2.Error as e:
+            return(e)
+        
+
+
+        cur.execute("SELECT (%s) FROM topfiveleagues", ["Country Code"])
+        currentLeaguesFromDB = cur.fetchall()
+
+        print(self.dbMainTable)
+
+        for countryCode in self.dbMainTable.keys():
+            #TEST FOR NONEXISTENT COUNTRY CODES
+            #TEST FOR EXISTING COUNTRY CODES BUT DIFFERENT LEAGUE NAMES (DO NOT FIX; EMAIL OR SEND NOTIFICATION OF POTENTIAL MISMATCH)
+            #TEST FOR EXISTING COUNTRY CODES IN DB THAT ARE NOT PICKED UP BY WEB SCRAPER (DO NOT FIX; EMAIL OR SEND NOTIFICATION OF POTENTIAL MISMATCH)
+            if countryCode not in currentLeaguesFromDB:
+                cur.execute("INSERT INTO topfiveleagues VALUES (%s, %s)", [countryCode, self.dbMainTable[countryCode]])
+
+            print(currentLeaguesFromDB)
+
+        return "IT'S WORKING???"
+
+    
+
         
 
 
@@ -85,10 +124,12 @@ def main(mytimer: func.TimerRequest) -> None:
     if mytimer.past_due:
         logging.info('The timer is past due!')
 
-    #allClubs = ClubFetcher().getAllClubs()
+    aggregateInfo = ClubFetcher()
 
-    topLeagues = ClubFetcher().getTopLeagues()
+    topLeagues = aggregateInfo.getTopLeagues()
 
-    print(topLeagues)
+    testing = aggregateInfo.putLeaguesInDB(topLeagues)
+
+    print(testing)
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
