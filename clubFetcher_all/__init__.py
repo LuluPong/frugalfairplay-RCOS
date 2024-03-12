@@ -95,20 +95,35 @@ class ClubFetcher:
             return(e)
         
 
-
-        cur.execute("SELECT (%s) FROM topfiveleagues", ["Country Code"])
+        primaryColumn = "Country Code"
+        cur.execute(f'SELECT "{primaryColumn}" FROM topfiveleagues') #THERE'S AN ISSUE WITH THIS 
         currentLeaguesFromDB = cur.fetchall()
 
-        print(self.dbMainTable)
+        #FLATTENING REQUIRED TO PUT VALUES INTO A NORMAL LIST INSTEAD OF EACH VALUE BEING IN ITS OWN TUPLE
+        flattenedCLFDB = [item for sublist in currentLeaguesFromDB for item in sublist]
+
+        #print(self.dbMainTable)
+        #print(flattenedCLFDB)
 
         for countryCode in self.dbMainTable.keys():
             #TEST FOR NONEXISTENT COUNTRY CODES
             #TEST FOR EXISTING COUNTRY CODES BUT DIFFERENT LEAGUE NAMES (DO NOT FIX; EMAIL OR SEND NOTIFICATION OF POTENTIAL MISMATCH)
             #TEST FOR EXISTING COUNTRY CODES IN DB THAT ARE NOT PICKED UP BY WEB SCRAPER (DO NOT FIX; EMAIL OR SEND NOTIFICATION OF POTENTIAL MISMATCH)
-            if countryCode not in currentLeaguesFromDB:
-                cur.execute("INSERT INTO topfiveleagues VALUES (%s, %s)", [countryCode, self.dbMainTable[countryCode]])
 
-            print(currentLeaguesFromDB)
+            #DECODE NECESSARY TO COMPARE BYTE STRING TO REGUAR STRING eg b'eng' == 'eng'
+            #print(countryCode)
+            if not (countryCode.decode("utf-8") in flattenedCLFDB):
+                #print("test successful")
+                try:
+                    cur.execute("INSERT INTO topfiveleagues VALUES (%s, %s)", [self.dbMainTable[countryCode].decode("utf-8"), countryCode.decode("utf-8")])
+                    conn.commit()
+                except psycopg2.Error as e:
+                    print(e)
+                    conn.rollback()
+            else:
+                print("Country code found")
+
+            print(any(countryCode in item for item in currentLeaguesFromDB))
 
         return "IT'S WORKING???"
 
@@ -128,8 +143,8 @@ def main(mytimer: func.TimerRequest) -> None:
 
     topLeagues = aggregateInfo.getTopLeagues()
 
-    testing = aggregateInfo.putLeaguesInDB(topLeagues)
+    insertNewLeagues = aggregateInfo.putLeaguesInDB(topLeagues)
 
-    print(testing)
+    print(insertNewLeagues)
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
