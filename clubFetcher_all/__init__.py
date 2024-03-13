@@ -154,7 +154,7 @@ class ClubFetcher:
 
             if not (team.decode("utf-8") in flattenedCTFDB):
                 try:
-                    cur.execute("INSERT INTO teamstable VALUES (%s, %s, %s)", [self.dbMainTable[countryCode].decode("utf-8"), countryCode.decode("utf-8")])
+                    cur.execute("INSERT INTO teamstable VALUES (%s, %s, %s, %s, %s, %s)", [self.dbMainTable[countryCode].decode("utf-8"), countryCode.decode("utf-8")])
                     conn.commit()
                 except psycopg2.Error as e:
                     print(e)
