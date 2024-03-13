@@ -18,6 +18,7 @@ class ClubFetcher:
         self.topLeaguesHTML = BeautifulSoup(self.topLeagues, 'html.parser')
 
         self.dbMainTable = dict()
+        self.dbTeamsTable = dict()
 
 
         self.dbName = os.environ["PostgresDBname"]
@@ -26,8 +27,6 @@ class ClubFetcher:
 
         pass
 
-    def pushTopLeaguesToDB(self):
-        return
 
     #FROM WEB SCRAPER
     def getTopLeagues(self):
@@ -60,31 +59,35 @@ class ClubFetcher:
 
 
             clubName = clubRowHTML.find_all(attrs={"data-stat":"team"})[0].a.string.encode("utf-8")
-            clubLeagueRank = clubRowHTML.find_all(attrs={"data-stat":"rank"})[0].string.encode("utf-8")
-            clubNumGames = clubRowHTML.find_all(attrs={"data-stat":"games"})[0].string.encode("utf-8")
-            clubWins = clubRowHTML.find_all(attrs={"data-stat":"wins"})[0].string.encode("utf-8")
-            clubTies = clubRowHTML.find_all(attrs={"data-stat":"ties"})[0].string.encode("utf-8")
-            clubLies = clubRowHTML.find_all(attrs={"data-stat":"losses"})[0].string.encode("utf-8")
-            clubGoalsFor = clubRowHTML.find_all(attrs={"data-stat":"goals_for"})[0].string.encode("utf-8")
-            clubGoalsAgainst = clubRowHTML.find_all(attrs={"data-stat":"goals_against"})[0].string.encode("utf-8")
-            clubGoalDiff = clubRowHTML.find_all(attrs={"data-stat":"goal_diff"})[0].string.encode("utf-8")
-            clubPoints = clubRowHTML.find_all(attrs={"data-stat":"points"})[0].string.encode("utf-8")
-            clubPointsAvg = clubRowHTML.find_all(attrs={"data-stat":"points_avg"})[0].string.encode("utf-8")
-            clubXgAvg = clubRowHTML.find_all(attrs={"data-stat":"xg_for"})[0].string.encode("utf-8")
-            clubXgAgainst = clubRowHTML.find_all(attrs={"data-stat":"xg_against"})[0].string.encode("utf-8")
-            clubXgDiff = clubRowHTML.find_all(attrs={"data-stat":"xg_diff"})[0].string.encode("utf-8")
-            clubXgDiff90 = clubRowHTML.find_all(attrs={"data-stat":"xg_diff_per90"})[0].string.encode("utf-8")
-            clubAttendance90 = clubRowHTML.find_all(attrs={"data-stat":"attendance_per_g"})[0].string.encode("utf-8")
-            clubTopScorer = clubRowHTML.find_all(attrs={"data-stat":"top_team_scorers"})[0].a.string.encode("utf-8")
-            clubTopScorerNumGoals = clubRowHTML.find_all(attrs={"data-stat":"top_team_scorers"})[0].span.string.encode("utf-8")
 
-            print(clubLeague)
+            self.dbTeamsTable[clubName] = {
+                "LeagueCountry" : clubRowHTML.find_all(attrs={"data-stat":"country"})[0].text[3:],
+                "LeagueRank": clubRowHTML.find_all(attrs={"data-stat":"rank"})[0].string.encode("utf-8"),
+                "NumberOfGames": clubRowHTML.find_all(attrs={"data-stat":"games"})[0].string.encode("utf-8"),
+                "ClubWins" : clubRowHTML.find_all(attrs={"data-stat":"wins"})[0].string.encode("utf-8"),
+                "ClubTies" : clubRowHTML.find_all(attrs={"data-stat":"ties"})[0].string.encode("utf-8"),
+                "ClubLosses" : clubRowHTML.find_all(attrs={"data-stat":"losses"})[0].string.encode("utf-8"),
+                "ClubGoalsFor" : clubRowHTML.find_all(attrs={"data-stat":"goals_for"})[0].string.encode("utf-8"),
+                "ClubGoalsAgainst" : clubRowHTML.find_all(attrs={"data-stat":"goals_against"})[0].string.encode("utf-8"),
+                "ClubGoalDiff" : clubRowHTML.find_all(attrs={"data-stat":"goal_diff"})[0].string.encode("utf-8"),
+                "ClubPoints" : clubRowHTML.find_all(attrs={"data-stat":"points"})[0].string.encode("utf-8"),
+                "ClubPointsAvg" : clubRowHTML.find_all(attrs={"data-stat":"points_avg"})[0].string.encode("utf-8"),
+                "ClubXgAvg" : clubRowHTML.find_all(attrs={"data-stat":"xg_for"})[0].string.encode("utf-8"),
+                "ClubXgAgainst" : clubRowHTML.find_all(attrs={"data-stat":"xg_against"})[0].string.encode("utf-8"),
+                "ClubXgDiff" : clubRowHTML.find_all(attrs={"data-stat":"xg_diff"})[0].string.encode("utf-8"),
+                "ClubXgDiff90" : clubRowHTML.find_all(attrs={"data-stat":"xg_diff_per90"})[0].string.encode("utf-8"),
+                "ClubAttendance90" : clubRowHTML.find_all(attrs={"data-stat":"attendance_per_g"})[0].string.encode("utf-8"),
+                "ClubTopScorer" : clubRowHTML.find_all(attrs={"data-stat":"top_team_scorers"})[0].a.string.encode("utf-8"),
+                "ClubTopScorerNumGoals" : clubRowHTML.find_all(attrs={"data-stat":"top_team_scorers"})[0].span.string.encode("utf-8")
+            }
+
+            #print(clubLeague)
 
         
 
-        return "end"
+        return self.dbTeamsTable
     
-    def putLeaguesInDB(self, leaguesDictionary):
+    def putLeaguesInDB(self):
         try:
             #CONNECTING TO DB
             conn = psycopg2.connect(dbname=self.dbName, user=self.dbUser, password=self.dbPSWD)
@@ -110,7 +113,7 @@ class ClubFetcher:
             #TEST FOR EXISTING COUNTRY CODES BUT DIFFERENT LEAGUE NAMES (DO NOT FIX; EMAIL OR SEND NOTIFICATION OF POTENTIAL MISMATCH)
             #TEST FOR EXISTING COUNTRY CODES IN DB THAT ARE NOT PICKED UP BY WEB SCRAPER (DO NOT FIX; EMAIL OR SEND NOTIFICATION OF POTENTIAL MISMATCH)
 
-            #DECODE NECESSARY TO COMPARE BYTE STRING TO REGUAR STRING eg b'eng' == 'eng'
+            #DECODE NECESSARY TO COMPARE BYTE STRING TO REGUAR STRING eg (countryCode) b'eng' == 'eng' (DB Country Code)
             #print(countryCode)
             if not (countryCode.decode("utf-8") in flattenedCLFDB):
                 #print("test successful")
@@ -122,10 +125,47 @@ class ClubFetcher:
                     conn.rollback()
             else:
                 print("Country code found")
+                #IF COUNTRY CODE EXISTS BUT VALUE DOES NOT MATCH CURRENT FBREF VALUE, UPDATE VALUE WITH FBREF VALUE
 
-            print(any(countryCode in item for item in currentLeaguesFromDB))
+        conn.close()
 
         return "IT'S WORKING???"
+    
+
+
+    def updateTeamsInDB(self):
+        try:
+            #CONNECTING TO DB
+            conn = psycopg2.connect(dbname=self.dbName, user=self.dbUser, password=self.dbPSWD)
+            cur = conn.cursor()
+
+
+        except psycopg2.Error as e:
+            return(e)
+        
+        primaryColumn = "team"
+        cur.execute(f'SELECT "{primaryColumn}" FROM teamstable') #THERE'S AN ISSUE WITH THIS 
+        currentTeamsFromDB = cur.fetchall()
+
+        #FLATTENING REQUIRED TO PUT VALUES INTO A NORMAL LIST INSTEAD OF EACH VALUE BEING IN ITS OWN TUPLE
+        flattenedCTFDB = [item for sublist in currentTeamsFromDB for item in sublist]
+
+        for team in self.dbTeamsTable.keys():
+
+            if not (team.decode("utf-8") in flattenedCTFDB):
+                try:
+                    cur.execute("INSERT INTO teamstable VALUES (%s, %s, %s)", [self.dbMainTable[countryCode].decode("utf-8"), countryCode.decode("utf-8")])
+                    conn.commit()
+                except psycopg2.Error as e:
+                    print(e)
+                    conn.rollback()
+
+
+
+        
+
+
+        pass
 
     
 
@@ -143,8 +183,10 @@ def main(mytimer: func.TimerRequest) -> None:
 
     topLeagues = aggregateInfo.getTopLeagues()
 
-    insertNewLeagues = aggregateInfo.putLeaguesInDB(topLeagues)
+    insertNewLeagues = aggregateInfo.putLeaguesInDB()
 
-    print(insertNewLeagues)
+    allTeams = aggregateInfo.getAllClubs()
+
+    print(allTeams)
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
