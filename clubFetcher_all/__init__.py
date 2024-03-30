@@ -150,21 +150,24 @@ class ClubFetcher:
         #FLATTENING REQUIRED TO PUT VALUES INTO A NORMAL LIST INSTEAD OF EACH VALUE BEING IN ITS OWN TUPLE
         flattenedCTFDB = [item for sublist in currentTeamsFromDB for item in sublist]
 
-        for team in self.dbTeamsTable.keys():
-
+        for team in self.dbTeamsTable:
+            #print(team)
+            print(team.keys())
+            print("\n")
             if not (team.decode("utf-8") in flattenedCTFDB):
                 try:
-                    cur.execute("INSERT INTO teamstable VALUES (%s, %s, %s, %s, %s, %s)", [self.dbMainTable[countryCode].decode("utf-8"), countryCode.decode("utf-8")])
-                    conn.commit()
+                    a = "TEST"
+                    #cur.execute("INSERT INTO teamstable VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,)"
+                    # , [team, 
+                    # countryCode.decode("utf-8")])
+                    #conn.commit()
                 except psycopg2.Error as e:
                     print(e)
                     conn.rollback()
 
 
 
-        
-
-
+        conn.close()
         pass
 
     
