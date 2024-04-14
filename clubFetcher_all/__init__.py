@@ -152,15 +152,74 @@ class ClubFetcher:
 
         for team in self.dbTeamsTable:
             #print(team)
-            print(team.keys())
+            #print(team.keys())
+            #print(self.dbTeamsTable[team]["ClubTopScorer"])
+            
             print("\n")
+            
             if not (team.decode("utf-8") in flattenedCTFDB):
+                
                 try:
                     a = "TEST"
-                    #cur.execute("INSERT INTO teamstable VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,)"
-                    # , [team, 
-                    # countryCode.decode("utf-8")])
-                    #conn.commit()
+                    cur.execute("""INSERT INTO teamstable (team, 
+                                "League Rank", 
+                                "League Country", 
+                                "Num of League Games Played",
+                                "League Wins",
+                                "League Ties",
+                                "League Losses",
+                                "League Num of Goals For",
+                                "League Num of Goals Against",
+                                "League Goal Difference",
+                                "League Points",
+                                "Avg League Points per Match",
+                                "League XG Avg",
+                                "League XG Against",
+                                "League XG Difference",
+                                "League XG Difference per 90",
+                                "League Attendance per 90",
+                                "League Top Scorer",
+                                "Top Scorer Num of Goals") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (team) DO UPDATE SET
+                                team = EXCLUDED.team, 
+                                League Rank = EXCLUDED."League Rank", 
+                                League Country = EXCLUDED."League Country", 
+                                Num of League Games Played = EXCLUDED."Num of League Games Played",
+                                League Wins = EXCLUDED."League Wins",
+                                League Ties = EXCLUDED."League Ties",
+                                League Losses = EXCLUDED."League Losses",
+                                League Num of Goals For = EXCLUDED."League Num of Goals For",
+                                League Num of Goals Against = EXCLUDED."League Num of Goals Against",
+                                League Goal Difference = EXCLUDED."League Goal Difference",
+                                League Points = EXCLUDED."League Points",
+                                Avg League Points per Match = EXCLUDED."Avg League Points per Match",
+                                League XG Avg = EXCLUDED."League XG Avg",
+                                League XG Against = EXCLUDED."League XG Against",
+                                League XG Difference = EXCLUDED."League XG Difference",
+                                League XG Difference per 90 = EXCLUDED."League XG Difference per 90",
+                                League Attendance per 90 = EXCLUDED."League Attendance per 90",
+                                League Top Scorer = EXCLUDED."League Top Scorer",
+                                Top Scorer Num of Goals = EXCLUDED."Top Scorer Num of Goals" """, \
+                                [team.decode('utf-8'), 
+                                 self.dbTeamsTable[team]["LeagueRank"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["LeagueCountry"].strip(), 
+                                 self.dbTeamsTable[team]["NumberOfGames"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubWins"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubTies"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubLosses"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubGoalsFor"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubGoalsAgainst"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubGoalDiff"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubPoints"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubPointsAvg"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubXgAvg"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubXgAgainst"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubXgDiff"].decode('utf-8'),
+                                 self.dbTeamsTable[team]["ClubXgDiff90"].decode('utf-8'), 
+                                 self.dbTeamsTable[team]["ClubAttendance90"].decode('utf-8'), 
+                                 self.dbTeamsTable[team]["ClubTopScorer"].decode('utf-8'), 
+                                 self.dbTeamsTable[team]["ClubTopScorerNumGoals"].decode('utf-8')])
+                    conn.commit()
                 except psycopg2.Error as e:
                     print(e)
                     conn.rollback()
@@ -169,7 +228,7 @@ class ClubFetcher:
 
         conn.close()
         pass
-
+        
     
 
         
@@ -190,6 +249,8 @@ def main(mytimer: func.TimerRequest) -> None:
 
     allTeams = aggregateInfo.getAllClubs()
 
-    print(allTeams)
+    aggregateInfo.updateTeamsInDB()
+
+    #print(allTeams)
 
     logging.info('Python timer trigger function ran at %s', utc_timestamp)
